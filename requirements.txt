@@ -1,0 +1,6 @@
+aiorun
+git+https://github.com/TelegramPlayground/pyrogram
+httpx
+pytgcrypto
+python-dotenv
+uvloop
