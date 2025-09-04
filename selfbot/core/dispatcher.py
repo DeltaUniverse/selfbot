@@ -5,6 +5,7 @@ import bisect
 from pyrogram.types import Update
 
 from selfbot.listener import Listener
+from selfbot.module import Module
 
 
 class Dispatcher(abc.ABC):
@@ -48,7 +49,7 @@ class Dispatcher(abc.ABC):
 
         self.updates()
 
-    def registers(self, mod: type) -> None:
+    def registers(self, mod: "Module") -> None:
         for event, func in mod_funcs(mod, "on_"):
             done = False
 
@@ -67,7 +68,7 @@ class Dispatcher(abc.ABC):
                 if not done:
                     self.unregisters(mod)
 
-    def unregister(self, listener: type) -> None:
+    def unregister(self, listener: "Listener") -> None:
         self.listeners[listener.event].remove(listener)
 
         if not self.listeners[listener.event]:
@@ -75,7 +76,7 @@ class Dispatcher(abc.ABC):
 
         self.updates()
 
-    def unregisters(self, mod: type) -> None:
+    def unregisters(self, mod: "Module") -> None:
         slots = []
 
         for event, listeners in self.listeners.items():
@@ -87,7 +88,7 @@ class Dispatcher(abc.ABC):
             self.unregister(listener)
 
 
-def mod_funcs(mod: type, prefix: str) -> list:
+def mod_funcs(mod: "Module", prefix: str) -> list:
     res = []
 
     for attr in dir(mod):

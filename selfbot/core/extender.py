@@ -11,7 +11,7 @@ class Extender(abc.ABC):
 
         super().__init__(**kwargs)
 
-    def load(self, mod: type) -> None:
+    def load(self, mod: "Module") -> None:
         if mod.name in self.modules:
             raise ModuleExists(type(self.modules[mod.name]), mod)
 
@@ -39,7 +39,7 @@ class Extender(abc.ABC):
                 ):
                     self.load(mod)
 
-    def unload(self, mod: type) -> None:
+    def unload(self, mod: "Module") -> None:
         try:
             self.unregisters(mod)
         except Exception as e:
