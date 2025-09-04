@@ -64,7 +64,7 @@ def fmtexc() -> str:
             frame
             for frame in exc.stack
             if not any(
-                name in frame.filename for name in {"<string>", "/selfbot/", "/usr/"}
+                name in frame.filename for name in ["<string>", "/selfbot/", "/usr/"]
             )
         ]
     )
