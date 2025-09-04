@@ -14,7 +14,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-REGEX_PATTERN = r"^purge(me)?(\s(\d+))?$"
+REGEX_PATTERN = r"^purge(me)?(:?\s)?(\d{1,3})?$"
 
 
 async def purge_filter(
@@ -35,8 +35,8 @@ class Purge(Module):
         match = re.match(REGEX_PATTERN, event.content)
 
         limit = 0
-        if match.group(3):
-            limit = int(match.group(3))
+        if match.group(2):
+            limit = int(match.group(2))
 
         ids = []
         if match.group(1):
