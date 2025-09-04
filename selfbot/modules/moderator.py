@@ -162,7 +162,7 @@ class Moderator(Module):
             )
             await event.edit_message_text(text, reply_markup=ikm(("Close", b"0")))
 
-    def verb(self, text: str, tense: "present" | "past") -> str:
+    def verb(self, text: str, tense: str) -> str:
         suffix = "ing" if tense == "present" else "ed"
 
         result = text.removesuffix("e")
