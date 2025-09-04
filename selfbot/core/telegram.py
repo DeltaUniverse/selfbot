@@ -23,7 +23,6 @@ from pyrogram.types import LinkPreviewOptions, Update
 
 COMMONS = {
     "workdir": "./selfbot/storage/",
-    "workers": 8,
     "parse_mode": ParseMode.HTML,
     "sleep_threshold": 900,
     "max_message_cache_size": 0,
@@ -122,11 +121,13 @@ class Telegram(abc.ABC):
             no_joined_notifications=True,
             **COMMONS,
         )
+
         client.dispatcher.update_parsers = {
             k: v
             for k, v in client.dispatcher.update_parsers.items()
             if k in (UpdateNewChannelMessage, UpdateNewMessage)
         }
+        setattr(client, "workers", len(client.dispatcher.update_parsers))
 
         return client
 
@@ -139,11 +140,13 @@ class Telegram(abc.ABC):
             bot_token=self.config["bot_token"],
             **COMMONS,
         )
+
         client.dispatcher.update_parsers = {
             k: v
             for k, v in client.dispatcher.update_parsers.items()
             if k
             in (UpdateBotInlineQuery, UpdateBotInlineSend, UpdateInlineBotCallbackQuery)
         }
+        setattr(client, "workers", len(client.dispatcher.update_parsers))
 
         return client
