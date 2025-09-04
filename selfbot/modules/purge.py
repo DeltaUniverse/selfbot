@@ -34,14 +34,11 @@ class Purge(Module):
     async def on_message(self, event: Message) -> None:
         match = re.match(REGEX_PATTERN, event.content)
 
-        await event.edit("...")
-
         limit = 0
         if match.group(3):
             limit = int(match.group(3))
 
         ids = []
-
         if match.group(1):
             ids = [
                 m.id
