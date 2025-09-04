@@ -5,6 +5,7 @@ import bisect
 from pyrogram.types import Update
 
 from selfbot.listener import Listener
+from selfbot.module import Module
 
 
 class Dispatcher(abc.ABC):
@@ -36,19 +37,7 @@ class Dispatcher(abc.ABC):
         if tasks:
             await asyncio.wait(tasks)
 
-    def register(
-        self, mod: type, func: callable, event: str, *, filters=None, priority=100
-    ) -> None:
-        if event not in self.listeners:
-            self.listeners[event] = []
-
-        bisect.insort(
-            self.listeners[event], Listener(mod, func, event, filters, priority)
-        )
-
-        self.updates()
-
-    def registers(self, mod: type) -> None:
+    def registers(self, mod: "Module") -> None:
         for event, func in mod_funcs(mod, "on_"):
             done = False
 
@@ -67,15 +56,7 @@ class Dispatcher(abc.ABC):
                 if not done:
                     self.unregisters(mod)
 
-    def unregister(self, listener: type) -> None:
-        self.listeners[listener.event].remove(listener)
-
-        if not self.listeners[listener.event]:
-            del self.listeners[listener.event]
-
-        self.updates()
-
-    def unregisters(self, mod: type) -> None:
+    def unregisters(self, mod: "Module") -> None:
         slots = []
 
         for event, listeners in self.listeners.items():
@@ -86,8 +67,28 @@ class Dispatcher(abc.ABC):
         for listener in slots:
             self.unregister(listener)
 
+    def register(
+        self, mod: type, func: callable, event: str, *, filters=None, priority=100
+    ) -> None:
+        if event not in self.listeners:
+            self.listeners[event] = []
 
-def mod_funcs(mod: type, prefix: str) -> list:
+        bisect.insort(
+            self.listeners[event], Listener(mod, func, event, filters, priority)
+        )
+
+        self.updates()
+
+    def unregister(self, listener: "Listener") -> None:
+        self.listeners[listener.event].remove(listener)
+
+        if not self.listeners[listener.event]:
+            del self.listeners[listener.event]
+
+        self.updates()
+
+
+def mod_funcs(mod: "Module", prefix: str) -> list:
     res = []
 
     for attr in dir(mod):

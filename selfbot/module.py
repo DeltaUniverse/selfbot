@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from selfbot.core import Selfbot
+
+
 class Module:
     name: str = "Unnamed"
 
-    def __init__(self, client: type) -> None:
+    def __init__(self, client: "Selfbot") -> None:
         self.client = client
 
 

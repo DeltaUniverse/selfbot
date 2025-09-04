@@ -75,7 +75,7 @@ class Debug(Module):
             cache_time=0,
         )
 
-    @listener.handler(filters.create(debug_filter, name="DebugFilter"), 3)
+    @listener.handler(filters.create(debug_filter, "DebugFilter"), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         btn = False
         msg, cmd = await self.msgs(event)

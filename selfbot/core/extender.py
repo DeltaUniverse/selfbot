@@ -11,7 +11,23 @@ class Extender(abc.ABC):
 
         super().__init__(**kwargs)
 
-    def load(self, mod: type) -> None:
+    def loads(self) -> None:
+        for submod in submods:
+            for attr in dir(submod):
+                mod = getattr(submod, attr)
+
+                if (
+                    inspect.isclass(mod)
+                    and issubclass(mod, Module)
+                    and mod is not Module
+                ):
+                    self.load(mod)
+
+    def unloads(self) -> None:
+        for key in list(self.modules.keys()):
+            self.unload(self.modules[key])
+
+    def load(self, mod: "Module") -> None:
         if mod.name in self.modules:
             raise ModuleExists(type(self.modules[mod.name]), mod)
 
@@ -27,19 +43,7 @@ class Extender(abc.ABC):
         finally:
             self.modules[mod.name] = new
 
-    def loads(self) -> None:
-        for submod in submods:
-            for attr in dir(submod):
-                mod = getattr(submod, attr)
-
-                if (
-                    inspect.isclass(mod)
-                    and issubclass(mod, Module)
-                    and mod is not Module
-                ):
-                    self.load(mod)
-
-    def unload(self, mod: type) -> None:
+    def unload(self, mod: "Module") -> None:
         try:
             self.unregisters(mod)
         except Exception as e:
@@ -48,7 +52,3 @@ class Extender(abc.ABC):
             self.logger.info("'%s' Unloaded", mod.name)
         finally:
             del self.modules[type(mod).name]
-
-    def unloads(self) -> None:
-        for key in list(self.modules.keys()):
-            self.unload(self.modules[key])
