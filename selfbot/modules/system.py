@@ -78,13 +78,13 @@ class System(Module):
         if os.path.isdir(".git"):
             await shell(
                 "git fetch ; git reset --hard origin/{}".format(
-                    self.client.config.get("upstream_branch", "staging")
+                    self.client.config.get("upstream_branch", "debug")
                 )
             )
 
         await asyncio.gather(
             event.edit_message_text("<code>Updating...</code>"),
-            shell("pip install -U pip && pip install -r requirements.txt"),
+            shell("pip install -U pip && pip install -Ur requirements.txt"),
             asyncio.to_thread(
                 put_id,
                 "r.txt",
