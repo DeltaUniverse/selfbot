@@ -3,7 +3,7 @@ import datetime
 import inspect
 import re
 
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.enums import MessageEntityType
 from pyrogram.errors import RPCError
 from pyrogram.types import (
@@ -20,7 +20,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-RE_COMPILED = re.compile(
+pattern = re.compile(
     r"^"
     r"(?:(?P<action>(un)?(ban|mute)|kick))"
     r"(?:\s+(?P<target>(?!\d{1,2}[mhdw]$)(?!-r$).+?))?"
@@ -28,13 +28,6 @@ RE_COMPILED = re.compile(
     r"(?:\s+-r\s+(?P<reason>.+))?"
     r"$"
 )
-TIME_DELTAS = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
-
-
-async def moderator_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "moderator"
 
 
 class Moderator(Module):
@@ -43,10 +36,11 @@ class Moderator(Module):
     async def on_startup(self) -> None:
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
+        self.unit = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 
-    @listener.handler(filters.regex(RE_COMPILED), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
-        data = RE_COMPILED.match(event.content).groupdict()
+        data = pattern.match(event.content).groupdict()
 
         user = data["target"]
         if user:
@@ -87,7 +81,7 @@ class Moderator(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex(r"^moderator$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -100,7 +94,7 @@ class Moderator(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(moderator_filter, "ModeratorFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         async with self.lock:
             data = await self.data.get()
@@ -127,7 +121,7 @@ class Moderator(Module):
 
         if action != "kick":
             if "until_date" in inspect.signature(coro).parameters and data["duration"]:
-                args = {TIME_DELTAS[data["unit"]]: int(data["duration"])}
+                args = {self.unit[data["unit"]]: int(data["duration"])}
                 unit = " ".join(
                     f"{v} {k.title() if v > 1 else k.removesuffix('s').title()}"
                     for k, v in args.items()

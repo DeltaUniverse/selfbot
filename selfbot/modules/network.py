@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from pyrogram import Client, filters
 from pyrogram.raw.functions import Ping
@@ -16,17 +17,13 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-
-async def network_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "ping"
+pattern = re.compile(r"^ping$")
 
 
 class Network(Module):
     name = "Network"
 
-    @listener.handler(filters.regex(r"^ping$"), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
         res = await event._client.get_inline_bot_results(self.client.bot.me.id, "ping")
         await asyncio.gather(
@@ -34,7 +31,7 @@ class Network(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex(r"^ping$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -49,11 +46,11 @@ class Network(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(network_filter, "NetworkFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         await self.edit(event._client, event)
 
-    @listener.handler(filters.regex(r"^ping/(app|bot)$"), 3)
+    @listener.handler(filters.regex(r"^ping/(app|bot)$"), 4)
     async def on_callback_query(self, event: CallbackQuery) -> None:
         query = event.data.split("/")[1]
 

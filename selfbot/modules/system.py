@@ -1,9 +1,10 @@
 import asyncio
 import datetime
 import os
+import re
 import sys
 
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.types import (
     ChosenInlineResult,
     InlineQuery,
@@ -16,11 +17,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm, shell
 
-
-async def system_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "r"
+pattern = re.compile(r"^r$")
 
 
 class System(Module):
@@ -51,7 +48,7 @@ class System(Module):
                 reply_markup=ikm(("Close", b"0")),
             )
 
-    @listener.handler(filters.regex("^r$"), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
         res = await event._client.get_inline_bot_results(self.client.bot.me.id, "r")
         await asyncio.gather(
@@ -59,7 +56,7 @@ class System(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex("^r$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -72,7 +69,7 @@ class System(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(system_filter, "SystemFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         def put_id(file: str, text: str) -> None:
             with open(file, "w") as f:

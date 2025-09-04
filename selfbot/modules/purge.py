@@ -1,7 +1,7 @@
 import asyncio
 import re
 
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.types import (
     ChosenInlineResult,
     InlineQuery,
@@ -14,13 +14,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-RE_COMPILED = re.compile(r"^purge(me)?(:?\s)?(\d{1,3})?$")
-
-
-async def purge_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "purge"
+pattern = re.compile(r"^purge(me)?(:?\s)?(\d{1,3})?$")
 
 
 class Purge(Module):
@@ -30,9 +24,9 @@ class Purge(Module):
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
 
-    @listener.handler(filters.regex(RE_COMPILED), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
-        match = RE_COMPILED.match(event.content)
+        match = pattern.match(event.content)
 
         limit = 0
         if match.group(2):
@@ -71,7 +65,7 @@ class Purge(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex(r"^purge$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -86,7 +80,7 @@ class Purge(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(purge_filter, "PurgeFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         async with self.lock:
             cid, ids = await self.data.get()
