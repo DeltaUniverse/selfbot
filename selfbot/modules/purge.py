@@ -14,7 +14,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-REGEX_PATTERN = r"^purge(me)?(\s(\d+))?$"
+RE_COMPILED = re.compile(r"^purge(me)?(:?\s)?(\d{1,3})?$")
 
 
 async def purge_filter(
@@ -30,13 +30,13 @@ class Purge(Module):
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
 
-    @listener.handler(filters.regex(REGEX_PATTERN), 1)
+    @listener.handler(filters.regex(RE_COMPILED), 1)
     async def on_message(self, event: Message) -> None:
-        match = re.match(REGEX_PATTERN, event.content)
+        match = RE_COMPILED.match(event.content)
 
         limit = 0
-        if match.group(3):
-            limit = int(match.group(3))
+        if match.group(2):
+            limit = int(match.group(2))
 
         ids = []
         if match.group(1):
@@ -88,11 +88,11 @@ class Purge(Module):
 
     @listener.handler(filters.create(purge_filter, "PurgeFilter"), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
-        count = 0
-        start = self.client.loop.time()
-
         async with self.lock:
             cid, ids = await self.data.get()
+
+        count = 0
+        start = self.client.loop.time()
 
         for chunk in [ids[i : i + 100] for i in range(0, len(ids), 100)]:
             count += await self.client.app.delete_messages(cid, chunk)

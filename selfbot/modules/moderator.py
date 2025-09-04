@@ -20,15 +20,15 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-REGEX_PATTERN = (
+RE_COMPILED = re.compile(
     r"^"
-    r"(?P<action>(un)?(ban|mute)|kick)"
+    r"(?:(?P<action>(un)?(ban|mute)|kick))"
     r"(?:\s+(?P<target>(?!\d{1,2}[mhdw]$)(?!-r$).+?))?"
     r"(?:\s+(?P<duration>\d{1,2})(?P<unit>[mhdw]))?"
     r"(?:\s+-r\s+(?P<reason>.+))?"
     r"$"
 )
-DURATION_UNIT = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
+TIME_DELTAS = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 
 
 async def moderator_filter(
@@ -44,9 +44,9 @@ class Moderator(Module):
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
 
-    @listener.handler(filters.regex(REGEX_PATTERN), 1)
+    @listener.handler(filters.regex(RE_COMPILED), 1)
     async def on_message(self, event: Message) -> None:
-        data = re.match(REGEX_PATTERN, event.content).groupdict()
+        data = RE_COMPILED.match(event.content).groupdict()
 
         user = data["target"]
         if user:
@@ -69,9 +69,6 @@ class Moderator(Module):
                 return await event.edit("<code>Reply to User or Give an ID</code>")
 
         data["chat_id"] = event.chat.id
-
-        if data["unit"]:
-            data["unit"] = DURATION_UNIT[data["unit"]]
 
         async with self.lock:
             await self.data.put(data)
@@ -112,8 +109,6 @@ class Moderator(Module):
         target = data["target"]
         params = {"chat_id": data["chat_id"], "user_id": int(target)}
 
-        await event.edit_message_text(f"<code>{self.verb(action, 'present')}...</code>")
-
         coro = None
         unit = "N/A"
 
@@ -132,7 +127,7 @@ class Moderator(Module):
 
         if action != "kick":
             if "until_date" in inspect.signature(coro).parameters and data["duration"]:
-                args = {data["unit"]: int(data["duration"])}
+                args = {TIME_DELTAS[data["unit"]]: int(data["duration"])}
                 unit = " ".join(
                     f"{v} {k.title() if v > 1 else k.removesuffix('s').title()}"
                     for k, v in args.items()
