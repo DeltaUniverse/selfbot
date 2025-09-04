@@ -2,6 +2,7 @@ import asyncio
 import re
 
 from pyrogram import filters
+from pyrogram.enums import ChatType
 from pyrogram.types import (
     ChosenInlineResult,
     InlineQuery,
@@ -45,7 +46,9 @@ class Purge(Module):
                 )
             ]
         else:
-            if event.reply_to_message_id:
+            if event.chat.type not in [ChatType.SUPERGROUP, ChatType.CHANNEL]:
+                return await event.edit(f"<code>Unsupported {event.chat.type}</code>")
+            elif event.reply_to_message_id:
                 if limit:
                     ids = range(
                         event.reply_to_message_id, event.reply_to_message_id + limit
