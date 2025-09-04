@@ -81,7 +81,7 @@ class System(Module):
         if os.path.isdir(".git"):
             await shell(
                 "git fetch ; git reset --hard origin/{}".format(
-                    self.client.config.get("upstream_branch", "master")
+                    self.client.config.get("upstream_branch", "staging")
                 )
             )
 
