@@ -9,6 +9,7 @@ from pyrogram.types import (
     InlineQueryResultCachedSticker,
     InputTextMessageContent,
     Message,
+    Update,
 )
 
 from selfbot import listener
@@ -50,26 +51,19 @@ class Network(Module):
 
     @listener.handler(filters.create(network_filter, "NetworkFilter"), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
-        result = await self.ping(event._client)
-
-        await event.edit_message_text(
-            result,
-            reply_markup=ikm(
-                [[("App", b"ping/app"), ("Bot", b"ping/bot")], [("Close", b"0")]]
-            ),
-        )
+        await self.edit(event._client, event)
 
     @listener.handler(filters.regex(r"^ping/(app|bot)$"), 3)
     async def on_callback_query(self, event: CallbackQuery) -> None:
-        data = event.data.split("/")[1]
+        query = event.data.split("/")[1]
 
         await event.edit_message_text(
             "<code>Calculating...</code>",
             reply_markup=ikm((">_", "user_id", event._client.me.id)),
         )
+        await self.edit(self.client.app if query == "app" else event._client, event)
 
-        client = self.client.app if data == "app" else event._client
-
+    async def edit(self, client: Client, event: Update) -> None:
         result = await self.ping(client)
         await event.edit_message_text(
             result,

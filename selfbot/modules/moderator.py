@@ -46,12 +46,10 @@ class Moderator(Module):
 
     @listener.handler(filters.regex(REGEX_PATTERN), 1)
     async def on_message(self, event: Message) -> None:
-        await event.edit("...")
-
         data = re.match(REGEX_PATTERN, event.content).groupdict()
 
-        target = data["target"]
-        if target:
+        user = data["target"]
+        if user:
             if (
                 event.entities
                 and event.entities[0].type == MessageEntityType.TEXT_MENTION
@@ -70,10 +68,10 @@ class Moderator(Module):
             else:
                 return await event.edit("<code>Reply to User or Give an ID</code>")
 
+        data["chat_id"] = event.chat.id
+
         if data["unit"]:
             data["unit"] = DURATION_UNIT[data["unit"]]
-
-        data["chat_id"] = event.chat.id
 
         async with self.lock:
             await self.data.put(data)
@@ -111,10 +109,10 @@ class Moderator(Module):
             data = await self.data.get()
 
         action = data["action"]
-        await event.edit_message_text(f"<code>{action.removesuffix('e').title()}ing...")
-
         target = data["target"]
         params = {"chat_id": data["chat_id"], "user_id": int(target)}
+
+        await event.edit_message_text(f"<code>{self.verb(action, 'present')}...</code>")
 
         coro = None
         unit = "N/A"
@@ -155,12 +153,7 @@ class Moderator(Module):
                 reply_markup=ikm(("Close", b"0")),
             )
         else:
-            past = action.removesuffix("e").title()
-            if past.endswith("n"):
-                past += "ned"
-            else:
-                past += "ed"
-
+            past = self.verb(action, "past")
             text = (
                 f"<b><a href='tg://user?id={target}'>User</a> {past}</b>"
                 f"\n  <code>ID      </code> : <code>{target}</code>"
@@ -168,3 +161,12 @@ class Moderator(Module):
                 f"\n  <code>Duration</code> : <code>{unit}</code>"
             )
             await event.edit_message_text(text, reply_markup=ikm(("Close", b"0")))
+
+    def verb(self, text: str, tense: "present" | "past") -> str:
+        suffix = "ing" if tense == "present" else "ed"
+
+        result = text.removesuffix("e")
+        if result.endswith("n"):
+            result += "n"
+
+        return f"{result}{suffix}".title()
