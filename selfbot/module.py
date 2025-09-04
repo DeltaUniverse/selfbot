@@ -1,11 +1,7 @@
-import logging
-
-
 class Module:
     name: str = "Unnamed"
 
     def __init__(self, client: type) -> None:
-        self.log = logging.getLogger(type(self).name)
         self.client = client
 
 

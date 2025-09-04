@@ -10,9 +10,8 @@ from .telegram import Telegram
 
 class Selfbot(Dispatcher, Extender, Telegram):
     def __init__(self, config: dict) -> None:
+        self.logger = logging.getLogger("Selfbot")
         self.config = config
-
-        self.log = logging.getLogger("Selfbot")
 
         self.loop = asyncio.get_event_loop()
         self.http = httpx.AsyncClient()

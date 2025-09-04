@@ -47,14 +47,14 @@ class Telegram(abc.ABC):
 
         try:
             await self.start()
-            self.log.info("Client Started")
+            self.logger.info("Client Started")
         except Exception as e:
-            self.log.error(str(e))
+            self.logger.error(str(e))
         else:
             await self.idle()
         finally:
             await self.stop()
-            self.log.info("Client Stopped")
+            self.logger.info("Client Stopped")
 
     async def start(self) -> None:
         await asyncio.gather(self.app.start(), self.bot.start())

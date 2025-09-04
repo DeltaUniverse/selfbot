@@ -21,9 +21,9 @@ class Extender(abc.ABC):
             self.registers(new)
         except Exception as e:
             self.unregisters(new)
-            self.log.error(str(e))
+            self.logger.error(str(e))
         else:
-            self.log.info("'%s' Loaded", mod.name)
+            self.logger.info("'%s' Loaded", mod.name)
         finally:
             self.modules[mod.name] = new
 
@@ -43,9 +43,9 @@ class Extender(abc.ABC):
         try:
             self.unregisters(mod)
         except Exception as e:
-            self.log.error(str(e))
+            self.logger.error(str(e))
         else:
-            self.log.info("'%s' Unloaded", mod.name)
+            self.logger.info("'%s' Unloaded", mod.name)
         finally:
             del self.modules[type(mod).name]
 
