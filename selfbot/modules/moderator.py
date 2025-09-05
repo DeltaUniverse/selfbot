@@ -18,7 +18,7 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ikm
+from selfbot.utils import ids, ikm
 
 pattern = re.compile(
     r"^"
@@ -62,13 +62,11 @@ class Moderator(Module):
             else:
                 return await event.edit("<code>Reply to User or Give an ID</code>")
 
-        data["chat_id"] = event.chat.id
-
         async with self.lock:
             await self.data.put(data)
 
         res = await event._client.get_inline_bot_results(
-            self.client.bot.me.id, "moderator"
+            self.client.bot.me.id, event.content
         )
         await asyncio.gather(
             event.reply_inline_bot_result(
@@ -101,7 +99,8 @@ class Moderator(Module):
 
         action = data["action"]
         target = data["target"]
-        params = {"chat_id": data["chat_id"], "user_id": int(target)}
+
+        params = {"chat_id": ids(event.inline_message_id)[0], "user_id": int(target)}
 
         coro = None
         unit = "N/A"
@@ -122,7 +121,7 @@ class Moderator(Module):
         if action != "kick":
             if "until_date" in inspect.signature(coro).parameters and data["duration"]:
                 args = {self.unit[data["unit"]]: int(data["duration"])}
-                unit = " ".join(
+                unit = "".join(
                     f"{v} {k.title() if v > 1 else k.removesuffix('s').title()}"
                     for k, v in args.items()
                 )

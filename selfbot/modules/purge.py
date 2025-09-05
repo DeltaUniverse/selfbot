@@ -15,7 +15,7 @@ from selfbot import listener
 from selfbot.module import Module
 from selfbot.utils import ikm
 
-pattern = re.compile(r"^purge(me)?(:?\s)?(\d{1,3})?$")
+pattern = re.compile(r"^purge(me)?(\s(\d{1,3}))?$")
 
 
 class Purge(Module):
@@ -31,7 +31,7 @@ class Purge(Module):
 
         limit = 0
         if match.group(2):
-            limit = int(match.group(2))
+            limit = int(match.group(3))
 
         ids = []
         if match.group(1):
