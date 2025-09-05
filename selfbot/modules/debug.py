@@ -20,7 +20,7 @@ from pyrogram.types import (
 import selfbot
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import aexec, fmtexc, ids, ikm, shell
+from selfbot.utils import aexec, fmtexc, fmtsec, ids, ikm, shell
 
 pattern = re.compile(r"^.*#$", flags=re.DOTALL)
 
@@ -161,16 +161,13 @@ class Debug(Module):
             except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
                 out = fmtexc()
             else:
-                out = buf.getvalue() or str(res)
+                out = (buf.getvalue() or str(res)).rstrip()
             finally:
-                rtt = self.client.loop.time() - now
+                rtt = fmtsec(now)
                 self.tasks.pop(event.inline_message_id, None)
 
         if code.endswith("#"):
             return
-
-        out = out.rstrip()
-        rtt = f"{rtt:.3f}".rstrip("0").rstrip(".")
 
         if len(out) > 756:
             url = (
@@ -181,5 +178,5 @@ class Debug(Module):
             out = f"{out[:512]}..."
 
         await event.edit_message_text(
-            f"<code>{html.escape(out)}</code>\n\n<b>{rtt} s</b>", reply_markup=ikm(ikb)
+            f"<code>{html.escape(out)}</code>\n\n<b>{rtt}</b>", reply_markup=ikm(ikb)
         )

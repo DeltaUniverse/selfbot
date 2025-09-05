@@ -13,7 +13,7 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ikm
+from selfbot.utils import fmtsec, ikm
 
 pattern = re.compile(r"^purge(me)?(\s(\d{1,3}))?$")
 
@@ -97,10 +97,8 @@ class Purge(Module):
             if count % 100 == 0:
                 await asyncio.sleep(5)
 
-        total = f"{(self.client.loop.time() - start):.3f}".rstrip("0").rstrip(".")
-
         await event.edit_message_text(
             f"<code>{count} Message{'' if count == 1 else 's'} Purged</code>"
-            f"\n\n<b>{total} s</b>",
+            f"\n\n<b>{fmtsec(start)}</b>",
             reply_markup=ikm(("Close", b"0")),
         )

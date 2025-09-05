@@ -18,12 +18,12 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ids, ikm
+from selfbot.utils import fmtsec, ids, ikm
 
 pattern = re.compile(
     r"^"
-    r"(?:(?P<action>(un)?(ban|mute)|kick))"
-    r"(?:\s+(?P<target>(?!\d{1,2}[mhdw]$)(?!-r$).+?))?"
+    r"(?P<action>(?:un)?(?:ban|mute)|kick)"
+    r"(?:\s+(?P<target>(?!\d{1,2}[mhdw])(?!-r\s)[^\s]+))?"
     r"(?:\s+(?P<duration>\d{1,2})(?P<unit>[mhdw]))?"
     r"(?:\s+-r\s+(?P<reason>.+))?"
     r"$"
@@ -36,7 +36,6 @@ class Moderator(Module):
     async def on_startup(self) -> None:
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
-        self.unit = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 
     @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
@@ -120,7 +119,7 @@ class Moderator(Module):
 
         if action != "kick":
             if "until_date" in inspect.signature(coro).parameters and data["duration"]:
-                args = {self.unit[data["unit"]]: int(data["duration"])}
+                args = {self.period[data["unit"]]: int(data["duration"])}
                 unit = "".join(
                     f"{v} {k.title() if v > 1 else k.removesuffix('s').title()}"
                     for k, v in args.items()
@@ -133,22 +132,26 @@ class Moderator(Module):
                 minutes=1
             )
 
+        now = self.client.loop.time()
+
         try:
             await coro(**params)
         except RPCError as e:
             await event.edit_message_text(
-                f"<code>{e.__class__.__name__}</code>",
+                f"<code>{e.__class__.__name__}</code>"
+                f"\n\n<b>{fmtsec(now, self.client.loop)}</b>",
                 reply_markup=ikm(("Close", b"0")),
             )
         else:
             past = self.verb(action, "past")
-            text = (
+            await event.edit_message_text(
                 f"<b><a href='tg://user?id={target}'>User</a> {past}</b>"
                 f"\n  <code>ID      </code> : <code>{target}</code>"
                 f"\n  <code>Reason  </code> : <code>{data['reason'] or 'N/A'}</code>"
                 f"\n  <code>Duration</code> : <code>{unit}</code>"
+                f"\n\n<b>{fmtsec(now)}</b>",
+                reply_markup=ikm(("Close", b"0")),
             )
-            await event.edit_message_text(text, reply_markup=ikm(("Close", b"0")))
 
     def verb(self, text: str, tense: str) -> str:
         suffix = "ing" if tense == "present" else "ed"

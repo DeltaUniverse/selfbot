@@ -15,7 +15,7 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ikm
+from selfbot.utils import fmtsec, ikm
 
 pattern = re.compile(r"^ping$")
 
@@ -71,8 +71,6 @@ class Network(Module):
 
     async def ping(self, client: Client) -> str:
         start = self.client.loop.time()
-
         await client.invoke(Ping(ping_id=client.rnd_id()))
-        total = f"{(self.client.loop.time() - start) :.3f}".rstrip("0").rstrip(".")
 
-        return f"<code>Pong! {total} s</code>"
+        return f"<code>Pong! {fmtsec(start)}</code>\n\n<b>{client.name.title()}</b>"

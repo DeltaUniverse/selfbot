@@ -9,6 +9,7 @@ class Module:
 
     def __init__(self, client: "Selfbot") -> None:
         self.client = client
+        self.period = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
 
 
 class ModuleError(Exception):
