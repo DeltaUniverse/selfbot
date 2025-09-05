@@ -48,9 +48,9 @@ class Moderator(Module):
                 and event.entities[0].type == MessageEntityType.TEXT_MENTION
             ):
                 data["target"] = event.entities[0].user.id
-            elif not target.isdigit():
+            else:
                 try:
-                    chat = await event._client.get_chat(target, False)
+                    chat = await event._client.get_chat(user, False)
                 except RPCError as e:
                     return await event.edit(f"<code>{e.__class__.__name__}</code>")
                 else:
@@ -138,8 +138,7 @@ class Moderator(Module):
             await coro(**params)
         except RPCError as e:
             await event.edit_message_text(
-                f"<code>{e.__class__.__name__}</code>"
-                f"\n\n<b>{fmtsec(now, self.client.loop)}</b>",
+                f"<code>{e.__class__.__name__}</code>\n\n<b>{fmtsec(now)}</b>",
                 reply_markup=ikm(("Close", b"0")),
             )
         else:
