@@ -1,6 +1,8 @@
 import abc
 import asyncio
 import functools
+import os
+import pathlib
 import signal
 
 from pyrogram import Client
@@ -19,9 +21,10 @@ from pyrogram.raw.types import (
     UpdateNewChannelMessage,
     UpdateNewMessage,
 )
+from pyrogram.storage import FileStorage
 from pyrogram.types import LinkPreviewOptions, Update
 
-COMMONS = {
+commons = {
     "workdir": "./selfbot/storage/",
     "parse_mode": ParseMode.HTML,
     "sleep_threshold": 900,
@@ -56,11 +59,22 @@ class Telegram(abc.ABC):
             self.logger.info("Client Stopped")
 
     async def start(self) -> None:
+        if not os.path.exists(f"{commons['workdir']}/{self.app.name}.session"):
+            async with Client(
+                self.app.name, session_string=self.config["session_string"]
+            ) as client:
+                await self.migrate(
+                    client, FileStorage(client.name, pathlib.Path(commons["workdir"]))
+                )
+
         await asyncio.gather(self.app.start(), self.bot.start())
         await self.app.resolve_peer(self.bot.me.username)
 
         await asyncio.to_thread(self.loads)
         await self.dispatch("startup")
+
+        for cred in ["api_id", "api_hash", "bot_token", "session_string"]:
+            self.config[cred] = "***"
 
     async def idle(self) -> None:
         if self.__idle__ and not self.__idle__.done():
@@ -113,13 +127,33 @@ class Telegram(abc.ABC):
                 finally:
                     self.handlers[name] = dispatcher
 
+    @staticmethod
+    async def migrate(client: Client, storage: FileStorage) -> None:
+        attrs = [
+            "dc_id",
+            "api_id",
+            "test_mode",
+            "auth_key",
+            "date",
+            "user_id",
+            "is_bot",
+        ]
+        creds = await asyncio.gather(
+            *(getattr(client.storage, attr)() for attr in attrs)
+        )
+
+        await storage.open()
+        await asyncio.gather(
+            *(getattr(storage, attr)(cred) for attr, cred in zip(attrs, creds))
+        )
+
     @property
     def _app(self) -> Client:
         client = Client(
             "app",
-            session_string=self.config["session_string"],
+            # session_string=self.config["session_string"],
             no_joined_notifications=True,
-            **COMMONS,
+            **commons,
         )
 
         client.dispatcher.update_parsers = {
@@ -138,7 +172,7 @@ class Telegram(abc.ABC):
             api_id=self.config["api_id"],
             api_hash=self.config["api_hash"],
             bot_token=self.config["bot_token"],
-            **COMMONS,
+            **commons,
         )
 
         client.dispatcher.update_parsers = {
