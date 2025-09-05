@@ -64,7 +64,7 @@ def fmtexc() -> str:
             frame
             for frame in exc.stack
             if not any(
-                name in frame.filename for name in {"<string>", "/selfbot/", "/usr/"}
+                name in frame.filename for name in ["<string>", "/selfbot/", "/usr/"]
             )
         ]
     )
@@ -73,3 +73,9 @@ def fmtexc() -> str:
         fmt += f"\n\nTraceback:\n{''.join(ftb)}"
 
     return fmt
+
+
+def fmtsec(start: int) -> str:
+    total = f"{(asyncio.get_event_loop().time() - start):.3f}".rstrip("0").rstrip(".")
+
+    return f"{total} s"

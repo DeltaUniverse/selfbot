@@ -2,9 +2,10 @@ import asyncio
 import contextlib
 import html
 import io
+import re
 
 import pyrogram
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.errors import MessageIdsEmpty
 from pyrogram.types import (
     CallbackQuery,
@@ -19,13 +20,9 @@ from pyrogram.types import (
 import selfbot
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import aexec, fmtexc, ids, ikm, shell
+from selfbot.utils import aexec, fmtexc, fmtsec, ids, ikm, shell
 
-
-async def debug_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip().endswith("#")
+pattern = re.compile(r"^.*#$", flags=re.DOTALL)
 
 
 class Debug(Module):
@@ -35,6 +32,8 @@ class Debug(Module):
         self.tasks = {}
         self.scope = {
             "asyncio": asyncio,
+            "io": io,
+            "re": re,
             "pyrogram": pyrogram,
             "filters": filters,
             "enums": pyrogram.enums,
@@ -58,7 +57,7 @@ class Debug(Module):
         res = await event._client.get_inline_bot_results(self.client.bot.me.id, "#")
         await event.reply_inline_bot_result(res.query_id, res.results[0].id, quote=True)
 
-    @listener.handler(filters.regex(r"^([\s\S]*)#$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -75,7 +74,7 @@ class Debug(Module):
             cache_time=0,
         )
 
-    @listener.handler(filters.create(debug_filter, "DebugFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         btn = False
         msg, cmd = await self.msgs(event)
@@ -89,7 +88,7 @@ class Debug(Module):
 
         await self.execute(msg, event, btn)
 
-    @listener.handler(filters.regex(r"^[01]$"), 3)
+    @listener.handler(filters.regex(r"^[01]$"), 4)
     async def on_callback_query(self, event: CallbackQuery) -> None:
         msg, cmd = await self.msgs(event)
 
@@ -162,16 +161,13 @@ class Debug(Module):
             except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
                 out = fmtexc()
             else:
-                out = buf.getvalue() or str(res)
+                out = (buf.getvalue() or str(res)).rstrip()
             finally:
-                rtt = self.client.loop.time() - now
+                rtt = fmtsec(now)
                 self.tasks.pop(event.inline_message_id, None)
 
         if code.endswith("#"):
             return
-
-        out = out.rstrip()
-        rtt = f"{rtt:.3f}".rstrip("0").rstrip(".")
 
         if len(out) > 756:
             url = (
@@ -182,5 +178,5 @@ class Debug(Module):
             out = f"{out[:512]}..."
 
         await event.edit_message_text(
-            f"<code>{html.escape(out)}</code>\n\n<b>{rtt} s</b>", reply_markup=ikm(ikb)
+            f"<code>{html.escape(out)}</code>\n\n<b>{rtt}</b>", reply_markup=ikm(ikb)
         )

@@ -1,7 +1,8 @@
 import asyncio
 import re
 
-from pyrogram import Client, filters
+from pyrogram import filters
+from pyrogram.enums import ChatType
 from pyrogram.types import (
     ChosenInlineResult,
     InlineQuery,
@@ -12,15 +13,9 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ikm
+from selfbot.utils import fmtsec, ikm
 
-RE_COMPILED = re.compile(r"^purge(me)?(:?\s)?(\d{1,3})?$")
-
-
-async def purge_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "purge"
+pattern = re.compile(r"^purge(me)?(\s(\d{1,3}))?$")
 
 
 class Purge(Module):
@@ -30,13 +25,13 @@ class Purge(Module):
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
 
-    @listener.handler(filters.regex(RE_COMPILED), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
-        match = RE_COMPILED.match(event.content)
+        match = pattern.match(event.content)
 
         limit = 0
         if match.group(2):
-            limit = int(match.group(2))
+            limit = int(match.group(3))
 
         ids = []
         if match.group(1):
@@ -51,7 +46,9 @@ class Purge(Module):
                 )
             ]
         else:
-            if event.reply_to_message_id:
+            if event.chat.type not in [ChatType.SUPERGROUP, ChatType.CHANNEL]:
+                return await event.edit(f"<code>Unsupported {event.chat.type}</code>")
+            elif event.reply_to_message_id:
                 if limit:
                     ids = range(
                         event.reply_to_message_id, event.reply_to_message_id + limit
@@ -71,7 +68,7 @@ class Purge(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex(r"^purge$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -86,7 +83,7 @@ class Purge(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(purge_filter, "PurgeFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         async with self.lock:
             cid, ids = await self.data.get()
@@ -100,10 +97,8 @@ class Purge(Module):
             if count % 100 == 0:
                 await asyncio.sleep(5)
 
-        total = f"{(self.client.loop.time() - start):.3f}".rstrip("0").rstrip(".")
-
         await event.edit_message_text(
             f"<code>{count} Message{'' if count == 1 else 's'} Purged</code>"
-            f"\n\n<b>{total} s</b>",
+            f"\n\n<b>{fmtsec(start)}</b>",
             reply_markup=ikm(("Close", b"0")),
         )

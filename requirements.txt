@@ -1,5 +1,6 @@
 aiorun
-git+https://github.com/TelegramPlayground/pyrogram
+#git+https://github.com/TelegramPlayground/pyrogram
+git+https://github.com/beepsound/pyrogram
 httpx
 pytgcrypto
 python-dotenv

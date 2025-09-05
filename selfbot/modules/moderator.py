@@ -3,7 +3,7 @@ import datetime
 import inspect
 import re
 
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.enums import MessageEntityType
 from pyrogram.errors import RPCError
 from pyrogram.types import (
@@ -18,23 +18,16 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import ikm
+from selfbot.utils import fmtsec, ids, ikm
 
-RE_COMPILED = re.compile(
+pattern = re.compile(
     r"^"
-    r"(?:(?P<action>(un)?(ban|mute)|kick))"
-    r"(?:\s+(?P<target>(?!\d{1,2}[mhdw]$)(?!-r$).+?))?"
+    r"(?P<action>(?:un)?(?:ban|mute)|kick)"
+    r"(?:\s+(?P<target>(?!\d{1,2}[mhdw])(?!-r\s)[^\s]+))?"
     r"(?:\s+(?P<duration>\d{1,2})(?P<unit>[mhdw]))?"
     r"(?:\s+-r\s+(?P<reason>.+))?"
     r"$"
 )
-TIME_DELTAS = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
-
-
-async def moderator_filter(
-    _: Client, __: filters.Filter, event: ChosenInlineResult
-) -> bool:
-    return event.query.strip() == "moderator"
 
 
 class Moderator(Module):
@@ -44,9 +37,9 @@ class Moderator(Module):
         self.data = asyncio.Queue()
         self.lock = asyncio.Lock()
 
-    @listener.handler(filters.regex(RE_COMPILED), 1)
+    @listener.handler(filters.regex(pattern), 1)
     async def on_message(self, event: Message) -> None:
-        data = RE_COMPILED.match(event.content).groupdict()
+        data = pattern.match(event.content).groupdict()
 
         user = data["target"]
         if user:
@@ -68,13 +61,11 @@ class Moderator(Module):
             else:
                 return await event.edit("<code>Reply to User or Give an ID</code>")
 
-        data["chat_id"] = event.chat.id
-
         async with self.lock:
             await self.data.put(data)
 
         res = await event._client.get_inline_bot_results(
-            self.client.bot.me.id, "moderator"
+            self.client.bot.me.id, event.content
         )
         await asyncio.gather(
             event.reply_inline_bot_result(
@@ -87,7 +78,7 @@ class Moderator(Module):
             event.delete(True),
         )
 
-    @listener.handler(filters.regex(r"^moderator$"), 2)
+    @listener.handler(filters.regex(pattern), 2)
     async def on_inline_query(self, event: InlineQuery) -> None:
         await event.answer(
             [
@@ -100,14 +91,15 @@ class Moderator(Module):
             cache_time=900,
         )
 
-    @listener.handler(filters.create(moderator_filter, "ModeratorFilter"), 3)
+    @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
         async with self.lock:
             data = await self.data.get()
 
         action = data["action"]
         target = data["target"]
-        params = {"chat_id": data["chat_id"], "user_id": int(target)}
+
+        params = {"chat_id": ids(event.inline_message_id)[0], "user_id": int(target)}
 
         coro = None
         unit = "N/A"
@@ -127,8 +119,8 @@ class Moderator(Module):
 
         if action != "kick":
             if "until_date" in inspect.signature(coro).parameters and data["duration"]:
-                args = {TIME_DELTAS[data["unit"]]: int(data["duration"])}
-                unit = " ".join(
+                args = {self.period[data["unit"]]: int(data["duration"])}
+                unit = "".join(
                     f"{v} {k.title() if v > 1 else k.removesuffix('s').title()}"
                     for k, v in args.items()
                 )
@@ -140,22 +132,26 @@ class Moderator(Module):
                 minutes=1
             )
 
+        now = self.client.loop.time()
+
         try:
             await coro(**params)
         except RPCError as e:
             await event.edit_message_text(
-                f"<code>{e.__class__.__name__}</code>",
+                f"<code>{e.__class__.__name__}</code>"
+                f"\n\n<b>{fmtsec(now, self.client.loop)}</b>",
                 reply_markup=ikm(("Close", b"0")),
             )
         else:
             past = self.verb(action, "past")
-            text = (
+            await event.edit_message_text(
                 f"<b><a href='tg://user?id={target}'>User</a> {past}</b>"
                 f"\n  <code>ID      </code> : <code>{target}</code>"
                 f"\n  <code>Reason  </code> : <code>{data['reason'] or 'N/A'}</code>"
                 f"\n  <code>Duration</code> : <code>{unit}</code>"
+                f"\n\n<b>{fmtsec(now)}</b>",
+                reply_markup=ikm(("Close", b"0")),
             )
-            await event.edit_message_text(text, reply_markup=ikm(("Close", b"0")))
 
     def verb(self, text: str, tense: str) -> str:
         suffix = "ing" if tense == "present" else "ed"

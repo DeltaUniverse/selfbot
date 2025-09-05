@@ -1,4 +1,4 @@
-from .debug import aexec, fmtexc, shell
+from .debug import aexec, fmtexc, fmtsec, shell
 from .tg import ids, ikm
 
-__all__ = ["aexec", "fmtexc", "ids", "ikm", "shell"]
+__all__ = ["aexec", "fmtexc", "fmtsec", "ids", "ikm", "shell"]
