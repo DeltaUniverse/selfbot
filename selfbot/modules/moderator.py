@@ -93,6 +93,11 @@ class Moderator(Module):
 
     @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
+        if self.data.empty():
+            return await self.client.app.delete_messages(
+                *ids(event.inline_message_id), True
+            )
+
         async with self.lock:
             data = await self.data.get()
 
