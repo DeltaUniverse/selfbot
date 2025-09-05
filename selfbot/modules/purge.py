@@ -13,7 +13,7 @@ from pyrogram.types import (
 
 from selfbot import listener
 from selfbot.module import Module
-from selfbot.utils import fmtsec, ikm
+from selfbot.utils import fmtsec, ids, ikm
 
 pattern = re.compile(r"^purge(me)?(\s(\d{1,3}))?$")
 
@@ -85,6 +85,11 @@ class Purge(Module):
 
     @listener.handler(filters.regex(pattern), 3)
     async def on_chosen_inline_result(self, event: ChosenInlineResult) -> None:
+        if self.data.empty():
+            return await self.client.app.delete_messages(
+                *ids(event.inline_message_id), True
+            )
+
         async with self.lock:
             cid, ids = await self.data.get()
 
