@@ -149,12 +149,7 @@ class Telegram(abc.ABC):
 
     @property
     def _app(self) -> Client:
-        client = Client(
-            "app",
-            # session_string=self.config["session_string"],
-            no_joined_notifications=True,
-            **commons,
-        )
+        client = Client("app", no_joined_notifications=True, **commons)
 
         client.dispatcher.update_parsers = {
             k: v
