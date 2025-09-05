@@ -84,7 +84,9 @@ class System(Module):
 
         await asyncio.gather(
             event.edit_message_text("<code>Updating...</code>"),
-            shell("pip install -U pip && pip install -Ur requirements.txt"),
+            shell(
+                "pip install --upgrade pip ; pip install --upgrade -r requirements.txt"
+            ),
             asyncio.to_thread(
                 put_id,
                 "r.txt",
