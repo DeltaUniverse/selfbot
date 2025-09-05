@@ -51,8 +51,12 @@ async def shell(cmd: str) -> str:
         stdout, stderr = await proc.communicate()
         return (stdout + stderr).decode()
     finally:
-        if not proc.returncode:
-            proc.terminate()
+        try:
+            if not proc.returncode:
+                proc.terminate()
+        except ProcessLookupError:
+            pass
+        else:
             await proc.wait()
 
 
