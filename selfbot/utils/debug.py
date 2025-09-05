@@ -46,10 +46,14 @@ async def shell(cmd: str) -> str:
     proc = await asyncio.create_subprocess_shell(
         cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
-    stdout, stderr = await proc.communicate()
-    output = stdout + stderr
 
-    return output.decode()
+    try:
+        stdout, stderr = await proc.communicate()
+        return (stdout + stderr).decode()
+    finally:
+        if not proc.returncode:
+            proc.terminate()
+            await proc.wait()
 
 
 def fmtexc() -> str:
