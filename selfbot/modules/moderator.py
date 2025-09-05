@@ -144,7 +144,7 @@ class Moderator(Module):
         else:
             past = self.verb(action, "past")
             await event.edit_message_text(
-                f"<b><a href='tg://user?id={target}'>User</a> {past}</b>"
+                f"<b><a href='tg://user?id={target}'>User</a> {past}</b>\n"
                 f"\n  <code>ID      </code> : <code>{target}</code>"
                 f"\n  <code>Reason  </code> : <code>{data['reason'] or 'N/A'}</code>"
                 f"\n  <code>Duration</code> : <code>{unit}</code>"

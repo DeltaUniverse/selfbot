@@ -119,7 +119,6 @@ class Schedule(Module):
                     )
                 except RPCError:
                     break
-
                 else:
                     count += 1
 
@@ -127,7 +126,7 @@ class Schedule(Module):
                         await asyncio.sleep(0.5)
 
             await event.edit_message_text(
-                f"<b>Schedule Message</b>"
+                f"<b>Schedule Message</b>\n"
                 f"\n  <code>Self   </code> : <code>{bool(data['self'])}</code>"
                 f"\n  <code>Repeat </code> : <code>{loop}</code>"
                 f"\n  <code>Period </code> : <code>{time} {units}</code>"
@@ -153,7 +152,7 @@ class Schedule(Module):
                 )
             else:
                 await event.edit_message_text(
-                    f"<b>Schedule Message</b>"
+                    f"<b>Schedule Message</b>\n"
                     f"\n  <code>Self   </code> : <code>{bool(data['self'])}</code>"
                     f"\n  <code>Period </code> : <code>{time} {units}</code>"
                     f"\n  <code>Content</code> : <code>{text}</code>"
