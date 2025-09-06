@@ -138,12 +138,12 @@ class Telegram(abc.ABC):
             "is_bot",
         ]
         creds = await asyncio.gather(
-            *(getattr(client.storage, attr)() for attr in attrs)
+            *[getattr(client.storage, attr)() for attr in attrs]
         )
 
         await storage.open()
         await asyncio.gather(
-            *(getattr(storage, attr)(cred) for attr, cred in zip(attrs, creds))
+            *[getattr(storage, attr)(cred) for attr, cred in zip(attrs, creds)]
         )
 
     @property
