@@ -2,8 +2,7 @@ import abc
 import asyncio
 import bisect
 
-from pyrogram.filters import RegexFilter
-from pyrogram.types import CallbackQuery, ChosenInlineResult, InlineQuery, Update
+from pyrogram.types import Update
 
 from selfbot.listener import Listener
 from selfbot.module import Module
@@ -32,22 +31,6 @@ class Dispatcher(abc.ABC):
 
                     if not match:
                         continue
-
-                    if match and isinstance(listener.filters, RegexFilter):
-                        if isinstance(update, Message):
-                            setattr(
-                                update,
-                                "match",
-                                listener.filters.p.match(update.content),
-                            )
-                        elif isinstance(update, CallbackQuery):
-                            setattr(
-                                update, "match", listener.filters.p.match(update.data)
-                            )
-                        elif isinstance(update, (ChosenInlineResult, InlineQuery)):
-                            setattr(
-                                update, "match", listener.filters.p.match(update.query)
-                            )
 
             tasks.add(self.loop.create_task(listener.func(*args, **kwargs)))
 
