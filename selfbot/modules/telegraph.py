@@ -43,9 +43,12 @@ class Telegraph(Module):
             reply = event.reply_to_message
 
             if reply.content:
-                content = re.sub(r"</?spoiler\b[^>]*>", "", reply.content.html).replace(
-                    "\n", "<br>"
-                )
+                content = reply.content.html
+
+                content = re.sub(r"</?spoiler\b[^>]*>", "", content)
+                content = re.sub(r"<emoji\b[^>]*>(.*?)</emoji>", r"\1", content)
+
+                content = content.replace("\n", "<br>")
 
                 if reply.web_page and reply.web_page.photo:
                     content = f"{content}<img src='{reply.web_page.url}'>"
