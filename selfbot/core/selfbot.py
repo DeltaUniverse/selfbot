@@ -31,9 +31,12 @@ class Selfbot(Dispatcher, Extender, Telegram):
             await selfbot.run()
         finally:
             if loop and not loop.is_closed():
-                loop.stop()
+                loop.call_soon(loop.stop)
 
         return selfbot
 
     async def stop(self) -> None:
-        await asyncio.gather(self.app.stop(), self.bot.stop(), self.http.aclose())
+        await asyncio.gather(
+            *[self.app.stop(), self.bot.stop(), self.http.aclose()],
+            return_exceptions=True
+        )
