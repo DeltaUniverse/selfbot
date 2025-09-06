@@ -22,6 +22,9 @@ pattern = re.compile(
     r"^graph(?:\s(?P<content>(?!-t\s.+).*?))?(?:\s-t\s(?P<title>.+))?$", re.DOTALL
 )
 
+spoiler = re.compile(r"</?spoiler\b[^>]*>")
+emojiid = re.compile(r"<emoji id=\"\d+\">(.*?)</emoji>")
+
 
 class Telegraph(Module):
     name = "Telegraph"
@@ -40,23 +43,20 @@ class Telegraph(Module):
         data["source"] = None
 
         if not data["content"]:
-            reply = event.reply_to_message
-
-            if reply.content:
-                content = reply.content.html
-
-                content = re.sub(r"</?spoiler\b[^>]*>", "", content)
-                content = re.sub(r"<emoji\b[^>]*>(.*?)</emoji>", r"\1", content)
-
-                content = content.replace("\n", "<br>")
-
-                if reply.web_page and reply.web_page.photo:
-                    content = f"{content}<img src='{reply.web_page.url}'>"
-
-                data.update({"content": content, "source": reply.link})
-
-            else:
+            if not event.reply_to_message.content:
                 return await event.edit("<code>Reply to Content or Give a Text</code>")
+
+            content = emojiid.sub(
+                r"\1", spoiler.sub("", event.reply_to_message.content.html)
+            ).replace("\n", "<br>")
+
+            if (
+                event.reply_to_message.web_page
+                and event.reply_to_message.web_page.photo
+            ):
+                content = f"{content}<img src='{event.reply_to_message.web_page.url}'>"
+
+            data.update({"content": content, "source": event.reply_to_message.link})
 
         async with self.lock:
             await self.data.put(data)
