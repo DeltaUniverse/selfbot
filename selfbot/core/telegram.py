@@ -74,7 +74,7 @@ class Telegram(abc.ABC):
         await self.dispatch("startup")
 
         for cred in ["api_id", "api_hash", "bot_token", "session_string"]:
-            self.config[cred] = "***"
+            self.config.pop(cred, None)
 
     async def idle(self) -> None:
         if self.__idle__ and not self.__idle__.done():
