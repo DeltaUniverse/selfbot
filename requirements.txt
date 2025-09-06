@@ -3,4 +3,5 @@ git+https://github.com/TelegramPlayground/pyrogram
 git+https://github.com/TelegramPlayground/pyrogram-tgcrypto
 httpx
 python-dotenv
+telegraph[aio]
 uvloop
