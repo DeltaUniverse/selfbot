@@ -77,30 +77,28 @@ class Telegram(abc.ABC):
             self.config.pop(cred, None)
 
     async def idle(self) -> None:
-        if self.__idle__ and not self.__idle__.done():
+        if self.__idle__ and not self.__idle__.is_set():
             raise RuntimeError("Selfbot Idling")
 
         signames = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT)
 
         def sighandler(signum: int) -> None:
             if self.__idle__:
-                self.__idle__.cancel()
+                self.__idle__.set()
 
         for signame in signames:
             self.loop.add_signal_handler(
                 signame, functools.partial(sighandler, signame)
             )
 
-        while True:
-            self.__idle__ = self.loop.create_task(asyncio.sleep(900))
+        self.__idle__ = asyncio.Event()
 
-            try:
-                await self.__idle__
-            except asyncio.CancelledError:
-                break
-
-        for signame in signames:
-            self.loop.remove_signal_handler(signame)
+        try:
+            await self.__idle__.wait()
+        finally:
+            for signame in signames:
+                with contextlib.suppress(Exception):
+                    self.loop.remove_signal_handler(signame)
 
     def updates(self) -> None:
         fltapp = flt.user(self.app.me.id)
